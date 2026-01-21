@@ -1,0 +1,31 @@
+{
+  "name": "evolution-cms/efilemanager",
+  "description": "UniSharp Laravel Filemanager for Evolution CMS",
+  "type": "evolutioncms-plugin",
+  "keywords": [
+    "evo",
+    "evocms",
+    "evolution",
+    "evolution-cms",
+    "filemanager",
+    "laravel-filemanager",
+    "tinymce"
+  ],
+  "require": {
+    "php": "^8.3",
+    "evolution-cms/evolution": "^3.5.2",
+    "unisharp/laravel-filemanager": "^v2.12.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "EvolutionCMS\\eFilemanager\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "EvolutionCMS\\eFilemanager\\eFilemanagerServiceProvider"
+      ]
+    }
+  }
+}
