@@ -10,28 +10,23 @@ return [
 
     'url_prefix'               => 'filemanager',
 
-    'allow_private_folder'     => true,
+    'allow_private_folder'     => false,
 
     'private_folder_name'      => EvolutionCMS\eFilemanager\Handlers\EvoConfigHandler::class,
 
     'allow_shared_folder'      => true,
 
-    'shared_folder_name'       => 'shares',
+    'shared_folder_name'       => '',
 
     'folder_categories'        => [
         'file'  => [
-            'folder_name'  => 'files',
+            'folder_name'  => 'assets/files',
             'startup_view' => 'list',
             'max_size'     => 50000,
             'thumb' => true,
             'thumb_width' => 80,
             'thumb_height' => 80,
             'valid_mime'   => [
-                'image/jpeg',
-                'image/pjpeg',
-                'image/png',
-                'image/gif',
-                'image/webp',
                 'application/pdf',
                 'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -41,7 +36,7 @@ return [
             ],
         ],
         'image' => [
-            'folder_name'  => 'photos',
+            'folder_name'  => 'assets/images',
             'startup_view' => 'grid',
             'max_size'     => 50000,
             'thumb' => true,
