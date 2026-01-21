@@ -38,6 +38,7 @@ class eFilemanagerServiceProvider extends ServiceProvider
 
         $this->publishes([
             dirname(__DIR__) . '/public/manager/media/browser/efilemanager/browse.php' => public_path('manager/media/browser/efilemanager/browse.php'),
+            dirname(__DIR__) . '/public/manager/media/browser/efilemanager/browser.php' => public_path('manager/media/browser/efilemanager/browser.php'),
         ], 'efilemanager-bridge');
 
         $this->publishes([
