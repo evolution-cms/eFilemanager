@@ -6,10 +6,16 @@ define('MODX_API_MODE', true);
 $coreRoot = dirname(__DIR__, 4);
 include_once($coreRoot . '/index.php');
 
-if (!function_exists('evo') || !evo()->isLoggedIn('mgr')) {
-    http_response_code(403);
-    echo 'Access denied.';
+if (!isset($_SESSION['mgrValidated'])) {
+    echo '<b>INCLUDE_ORDERING_ERROR</b><br /><br />Please use the EVO Content Manager instead of accessing this file directly.';
     exit;
+}
+
+$evo = null;
+if (function_exists('EvolutionCMS')) {
+    $evo = EvolutionCMS();
+} elseif (function_exists('evo')) {
+    $evo = evo();
 }
 
 $settings = function_exists('config') ? config('cms.settings.eFilemanager', []) : [];
@@ -23,16 +29,18 @@ $type = isset($_GET['type']) ? (string)$_GET['type'] : 'files';
 $type = strtolower($type);
 $lfmType = ($type === 'images' || $type === 'image') ? 'Images' : 'Files';
 
-if ($lfmType === 'Images' && !evo()->hasPermission('file_manager') && !evo()->hasPermission('assets_images')) {
-    http_response_code(403);
-    echo 'No permission for images.';
-    exit;
-}
+if ($evo) {
+    if ($lfmType === 'Images' && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_images')) {
+        http_response_code(403);
+        echo 'No permission for images.';
+        exit;
+    }
 
-if ($lfmType === 'Files' && !evo()->hasPermission('file_manager') && !evo()->hasPermission('assets_files')) {
-    http_response_code(403);
-    echo 'No permission for files.';
-    exit;
+    if ($lfmType === 'Files' && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_files')) {
+        http_response_code(403);
+        echo 'No permission for files.';
+        exit;
+    }
 }
 
 $prefix = 'filemanager';

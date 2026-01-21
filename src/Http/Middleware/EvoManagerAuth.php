@@ -5,7 +5,6 @@ namespace EvolutionCMS\eFilemanager\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class EvoManagerAuth
 {
@@ -20,11 +19,11 @@ class EvoManagerAuth
         $enabled = (bool)($settings['enable'] ?? true);
 
         if (!$enabled) {
-            return $this->deny(404);
+            return $this->deny(404, 'File manager is disabled.');
         }
 
-        if (!function_exists('evo') || !evo()->isLoggedIn('mgr')) {
-            return $this->deny(403);
+        if (!$this->hasManagerSession()) {
+            return $this->deny(403, 'No manager session.');
         }
 
         $acl = $settings['acl'] ?? [];
@@ -40,8 +39,9 @@ class EvoManagerAuth
         $permissions = $settings['permissions'] ?? [];
         $permission = $this->resolvePermission($permissions, $typeKey, $isManage);
 
-        if ($permission && !evo()->hasPermission('file_manager') && !evo()->hasPermission($permission)) {
-            return $this->deny(403);
+        $evo = $this->getEvo();
+        if ($permission && $evo && !$evo->hasPermission('file_manager') && !$evo->hasPermission($permission)) {
+            return $this->deny(403, 'No permission.');
         }
 
         return $next($request);
@@ -118,12 +118,38 @@ class EvoManagerAuth
         return false;
     }
 
-    private function deny(int $status): Response
+    private function deny(int $status, string $message = 'Access denied.'): Response
     {
-        if (function_exists('abort')) {
-            abort($status);
+        if ($status === 404) {
+            $message = 'Not Found';
+        }
+        return new Response($message, $status);
+    }
+
+    private function hasManagerSession(): bool
+    {
+        if (isset($_SESSION['mgrValidated']) && $_SESSION['mgrValidated']) {
+            return true;
         }
 
-        throw new HttpException($status);
+        $evo = $this->getEvo();
+        if ($evo && method_exists($evo, 'isLoggedIn')) {
+            return (bool)$evo->isLoggedIn('mgr');
+        }
+
+        return false;
+    }
+
+    private function getEvo()
+    {
+        if (function_exists('evo')) {
+            return evo();
+        }
+
+        if (function_exists('EvolutionCMS')) {
+            return EvolutionCMS();
+        }
+
+        return null;
     }
 }
