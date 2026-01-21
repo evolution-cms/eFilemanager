@@ -25,18 +25,17 @@ if (is_array($settings) && array_key_exists('enable', $settings) && !$settings['
     exit;
 }
 
-$type = isset($_GET['type']) ? (string)$_GET['type'] : 'files';
-$type = strtolower($type);
-$lfmType = ($type === 'images' || $type === 'image') ? 'Images' : 'Files';
+$typeParam = isset($_GET['type']) ? strtolower((string)$_GET['type']) : '';
+$lfmType = ($typeParam === 'images' || $typeParam === 'image') ? 'Images' : 'Files';
 
-if ($evo) {
-    if ($lfmType === 'Images' && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_images')) {
+if ($evo && $typeParam !== '') {
+    if (($typeParam === 'images' || $typeParam === 'image') && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_images')) {
         http_response_code(403);
         echo 'No permission for images.';
         exit;
     }
 
-    if ($lfmType === 'Files' && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_files')) {
+    if (($typeParam === 'files' || $typeParam === 'file') && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_files')) {
         http_response_code(403);
         echo 'No permission for files.';
         exit;
