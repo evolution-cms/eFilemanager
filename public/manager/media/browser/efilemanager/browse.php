@@ -18,6 +18,10 @@ if (function_exists('EvolutionCMS')) {
     $evo = evo();
 }
 
+if ($evo && method_exists($evo, 'setContext')) {
+    $evo->setContext('mgr');
+}
+
 $settings = function_exists('config') ? config('cms.settings.eFilemanager', []) : [];
 if (is_array($settings) && array_key_exists('enable', $settings) && !$settings['enable']) {
     http_response_code(404);
@@ -29,13 +33,17 @@ $typeParam = isset($_GET['type']) ? strtolower((string)$_GET['type']) : '';
 $lfmType = ($typeParam === 'images' || $typeParam === 'image') ? 'Images' : 'Files';
 
 if ($evo && $typeParam !== '') {
-    if (($typeParam === 'images' || $typeParam === 'image') && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_images')) {
+    $hasFileManager = (bool)$evo->hasPermission('file_manager', 'mgr');
+    $hasImages = (bool)$evo->hasPermission('assets_images', 'mgr');
+    $hasFiles = (bool)$evo->hasPermission('assets_files', 'mgr');
+
+    if (($typeParam === 'images' || $typeParam === 'image') && !$hasFileManager && !$hasImages) {
         http_response_code(403);
         echo 'No permission for images.';
         exit;
     }
 
-    if (($typeParam === 'files' || $typeParam === 'file') && !$evo->hasPermission('file_manager') && !$evo->hasPermission('assets_files')) {
+    if (($typeParam === 'files' || $typeParam === 'file') && !$hasFileManager && !$hasFiles) {
         http_response_code(403);
         echo 'No permission for files.';
         exit;

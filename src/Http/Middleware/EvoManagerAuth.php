@@ -40,7 +40,11 @@ class EvoManagerAuth
         $permission = $this->resolvePermission($permissions, $typeKey, $isManage);
 
         $evo = $this->getEvo();
-        if ($permission && $evo && !$evo->hasPermission('file_manager') && !$evo->hasPermission($permission)) {
+        if ($evo && method_exists($evo, 'setContext')) {
+            $evo->setContext('mgr');
+        }
+
+        if ($permission && !$this->hasManagerPermission($permission, $evo) && !$this->hasManagerPermission('file_manager', $evo)) {
             return $this->deny(403, 'No permission.');
         }
 
@@ -151,5 +155,19 @@ class EvoManagerAuth
         }
 
         return null;
+    }
+
+    private function hasManagerPermission(string $permission, $evo): bool
+    {
+        $sessionPermissions = $_SESSION['mgrPermissions'] ?? null;
+        if (is_array($sessionPermissions) && array_key_exists($permission, $sessionPermissions)) {
+            return (bool)$sessionPermissions[$permission];
+        }
+
+        if ($evo && method_exists($evo, 'hasPermission')) {
+            return (bool)$evo->hasPermission($permission, 'mgr');
+        }
+
+        return false;
     }
 }
