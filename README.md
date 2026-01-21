@@ -37,6 +37,7 @@ Key settings:
 - `allow_mcpuk_fallback`: allow legacy fallback for TinyMCE < 5 only.
 - `permissions`: per-type browse/manage permissions.
 - `acl.allow_manage`: optional toggle to restrict upload/delete/rename.
+- `lfm.private_folder_name`: should be `EvolutionCMS\\eFilemanager\\Handlers\\EvoConfigHandler::class` (avoid auth() dependency).
 
 ## Notes
 - LFM runs on `/{url_prefix}` (default `filemanager`).

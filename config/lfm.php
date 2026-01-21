@@ -12,7 +12,7 @@ return [
 
     'allow_private_folder'     => true,
 
-    'private_folder_name'      => UniSharp\LaravelFilemanager\Handlers\ConfigHandler::class,
+    'private_folder_name'      => EvolutionCMS\eFilemanager\Handlers\EvoConfigHandler::class,
 
     'allow_shared_folder'      => true,
 
