@@ -5,6 +5,7 @@ namespace EvolutionCMS\eFilemanager\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class EvoManagerAuth
 {
@@ -19,20 +20,20 @@ class EvoManagerAuth
         $enabled = (bool)($settings['enable'] ?? true);
 
         if (!$enabled) {
-            abort(404);
+            return $this->deny(404);
         }
 
         if (!function_exists('evo') || !evo()->isLoggedIn('mgr')) {
-            abort(403);
+            return $this->deny(403);
         }
 
         $acl = $settings['acl'] ?? [];
         $isManage = $this->isManageAction($request);
         if ($isManage && array_key_exists('allow_manage', $acl) && !$acl['allow_manage']) {
-            abort(403);
+            return $this->deny(403);
         }
         if (!$isManage && array_key_exists('allow_browse', $acl) && !$acl['allow_browse']) {
-            abort(403);
+            return $this->deny(403);
         }
 
         $typeKey = $this->resolveType($request);
@@ -40,7 +41,7 @@ class EvoManagerAuth
         $permission = $this->resolvePermission($permissions, $typeKey, $isManage);
 
         if ($permission && !evo()->hasPermission('file_manager') && !evo()->hasPermission($permission)) {
-            abort(403);
+            return $this->deny(403);
         }
 
         return $next($request);
@@ -115,5 +116,14 @@ class EvoManagerAuth
         }
 
         return false;
+    }
+
+    private function deny(int $status): Response
+    {
+        if (function_exists('abort')) {
+            abort($status);
+        }
+
+        throw new HttpException($status);
     }
 }
