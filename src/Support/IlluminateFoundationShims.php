@@ -53,3 +53,23 @@ if (!trait_exists(ValidatesRequests::class)) {
         }
     }
 }
+
+namespace {
+    if (!function_exists('event')) {
+        function event(...$args)
+        {
+            if (function_exists('app')) {
+                $dispatcher = app('events');
+                if ($dispatcher && method_exists($dispatcher, 'dispatch')) {
+                    return $dispatcher->dispatch(...$args);
+                }
+            }
+
+            if (class_exists(\Illuminate\Support\Facades\Event::class)) {
+                return \Illuminate\Support\Facades\Event::dispatch(...$args);
+            }
+
+            return $args[0] ?? null;
+        }
+    }
+}
