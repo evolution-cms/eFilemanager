@@ -3,7 +3,8 @@
 define('IN_MANAGER_MODE', true);
 define('MODX_API_MODE', true);
 
-include_once(__DIR__ . '/../../../../../index.php');
+$coreRoot = dirname(__DIR__, 4);
+include_once($coreRoot . '/index.php');
 
 if (!function_exists('evo') || !evo()->isLoggedIn('mgr')) {
     http_response_code(403);
