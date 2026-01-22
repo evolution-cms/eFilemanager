@@ -30,7 +30,15 @@ if (is_array($settings) && array_key_exists('enable', $settings) && !$settings['
 }
 
 $typeParam = isset($_GET['type']) ? strtolower((string)$_GET['type']) : '';
+if ($typeParam === '' && isset($_GET['Type'])) {
+    $typeParam = strtolower((string)$_GET['Type']);
+}
 $lfmType = ($typeParam === 'images' || $typeParam === 'image') ? 'Images' : 'Files';
+
+$callbackName = '';
+if (!empty($_GET['callback'])) {
+    $callbackName = preg_replace('/[^A-Za-z0-9_]/', '', (string)$_GET['callback']);
+}
 
 if ($evo && $typeParam !== '') {
     $hasFileManager = (bool)$evo->hasPermission('file_manager', 'mgr');
@@ -69,6 +77,10 @@ if (!empty($_GET['editor'])) {
     $params['editor'] = $_GET['editor'];
 }
 
+if ($callbackName !== '') {
+    $params['callback'] = $callbackName;
+}
+
 if (function_exists('public_path')) {
     $scriptPath = public_path('assets/vendor/laravel-filemanager/js/script.js');
     if (is_file($scriptPath)) {
@@ -88,6 +100,28 @@ header('Pragma: no-cache');
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>File Manager</title>
+<?php if ($callbackName !== ''): ?>
+    <script>
+        window.<?php echo $callbackName; ?> = function (items) {
+            var url = '';
+            if (typeof items === 'string') {
+                url = items;
+            } else if (Array.isArray(items) && items.length > 0) {
+                url = items[0] && (items[0].url || items[0].path || items[0].file) ? (items[0].url || items[0].path || items[0].file) : '';
+            } else if (items && items.url) {
+                url = items.url;
+            }
+
+            if (url && window.opener && typeof window.opener.SetUrl === 'function') {
+                window.opener.SetUrl(url);
+            }
+
+            if (window.close) {
+                window.close();
+            }
+        };
+    </script>
+<?php endif; ?>
     <style>
         html, body {
             height: 100%;
