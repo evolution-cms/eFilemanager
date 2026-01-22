@@ -28,6 +28,13 @@ if (is_array($settings) && array_key_exists('enable', $settings) && !$settings['
     echo 'File manager is disabled.';
     exit;
 }
+$urlStrategy = 'relative';
+if (is_array($settings) && isset($settings['url_strategy'])) {
+    $urlStrategy = (string)$settings['url_strategy'];
+}
+if ($urlStrategy !== 'absolute') {
+    $urlStrategy = 'relative';
+}
 
 $typeParam = isset($_GET['type']) ? strtolower((string)$_GET['type']) : '';
 if ($typeParam === '' && isset($_GET['Type'])) {
@@ -93,6 +100,14 @@ $lfmUrl .= '?' . http_build_query($params);
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 
+$siteUrl = '';
+if (defined('MODX_SITE_URL')) {
+    $siteUrl = MODX_SITE_URL;
+} elseif ($evo && method_exists($evo, 'getConfig')) {
+    $siteUrl = (string)$evo->getConfig('site_url');
+}
+$siteUrl = rtrim((string)$siteUrl, '/');
+
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,6 +117,8 @@ header('Pragma: no-cache');
     <title>File Manager</title>
 <?php if ($callbackName !== ''): ?>
     <script>
+        var eFilemanagerUrlStrategy = <?php echo json_encode($urlStrategy); ?>;
+        var eFilemanagerSiteUrl = <?php echo json_encode($siteUrl); ?>;
         window.<?php echo $callbackName; ?> = function (items) {
             var url = '';
             if (typeof items === 'string') {
@@ -110,6 +127,18 @@ header('Pragma: no-cache');
                 url = items[0] && (items[0].url || items[0].path || items[0].file) ? (items[0].url || items[0].path || items[0].file) : '';
             } else if (items && items.url) {
                 url = items.url;
+            }
+
+            if (eFilemanagerUrlStrategy === 'relative' && url) {
+                if (eFilemanagerSiteUrl && url.indexOf(eFilemanagerSiteUrl) === 0) {
+                    url = url.slice(eFilemanagerSiteUrl.length);
+                }
+                if (window.location && window.location.origin && url.indexOf(window.location.origin) === 0) {
+                    url = url.slice(window.location.origin.length);
+                }
+                if (url && url.charAt(0) !== '/') {
+                    url = '/' + url;
+                }
             }
 
             if (url && window.opener && typeof window.opener.SetUrl === 'function') {
