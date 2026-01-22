@@ -36,14 +36,24 @@ class eFilemanagerServiceProvider extends ServiceProvider
             dirname(__DIR__) . '/config/lfm.php' => config_path('lfm.php', true),
         ], 'efilemanager-lfm-config');
 
+        $managerPath = $this->resolveManagerPath();
         $this->publishes([
-            dirname(__DIR__) . '/public/manager/media/browser/efilemanager/browse.php' => public_path('manager/media/browser/efilemanager/browse.php'),
-            dirname(__DIR__) . '/public/manager/media/browser/efilemanager/browser.php' => public_path('manager/media/browser/efilemanager/browser.php'),
+            dirname(__DIR__) . '/public/manager/media/browser/efilemanager/browse.php' => $managerPath . '/media/browser/efilemanager/browse.php',
+            dirname(__DIR__) . '/public/manager/media/browser/efilemanager/browser.php' => $managerPath . '/media/browser/efilemanager/browser.php',
         ], 'efilemanager-bridge');
 
         $this->publishes([
             dirname(__DIR__) . '/views/laravel-filemanager/index.blade.php' => base_path('views/vendor/laravel-filemanager/index.blade.php'),
         ], 'efilemanager-lfm-view');
+
+        $langRoot = $this->resolveLangVendorPath('laravel-filemanager');
+        $langSource = dirname(__DIR__) . '/lang/vendor/laravel-filemanager';
+        if (is_dir($langSource)) {
+            $langFiles = $this->collectPublishFiles($langSource, $langRoot);
+            if ($langFiles !== []) {
+                $this->publishes($langFiles, 'efilemanager-lfm-lang');
+            }
+        }
 
         $lfmPublic = base_path('vendor/unisharp/laravel-filemanager/public');
         $lfmFiles = $this->collectPublishFiles($lfmPublic, public_path('assets/vendor/laravel-filemanager'));
@@ -121,5 +131,167 @@ class eFilemanagerServiceProvider extends ServiceProvider
         }
 
         return $expanded;
+    }
+
+    protected function resolveManagerPath(): string
+    {
+        $managerPath = $this->resolveManagerPathFromConfig();
+        if ($managerPath !== null) {
+            return $managerPath;
+        }
+
+        $managerUrl = $this->resolveManagerUrlFromConfig();
+        if ($managerUrl !== null) {
+            return $managerUrl;
+        }
+
+        return public_path('manager');
+    }
+
+    protected function resolveManagerPathFromConfig(): ?string
+    {
+        $candidates = [];
+        if (function_exists('config')) {
+            $candidates[] = config('cms.manager_path');
+            $candidates[] = config('cms.settings.manager_path');
+        }
+
+        if (defined('MODX_MANAGER_PATH')) {
+            $candidates[] = MODX_MANAGER_PATH;
+        }
+
+        $evo = $this->resolveEvo();
+        if ($evo && method_exists($evo, 'getConfig')) {
+            $candidates[] = $evo->getConfig('manager_path');
+        }
+
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate)) {
+                continue;
+            }
+            $candidate = trim($candidate);
+            if ($candidate === '') {
+                continue;
+            }
+
+            if ($this->looksLikeUrl($candidate)) {
+                continue;
+            }
+
+            return $this->normalizeManagerFilesystemPath($candidate);
+        }
+
+        return null;
+    }
+
+    protected function resolveManagerUrlFromConfig(): ?string
+    {
+        $candidates = [];
+        if (function_exists('config')) {
+            $candidates[] = config('cms.manager_url');
+            $candidates[] = config('cms.settings.manager_url');
+        }
+
+        if (defined('MODX_MANAGER_URL')) {
+            $candidates[] = MODX_MANAGER_URL;
+        }
+
+        $evo = $this->resolveEvo();
+        if ($evo && method_exists($evo, 'getConfig')) {
+            $candidates[] = $evo->getConfig('manager_url');
+        }
+
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate)) {
+                continue;
+            }
+            $candidate = trim($candidate);
+            if ($candidate === '') {
+                continue;
+            }
+
+            $path = $this->extractPathFromUrl($candidate);
+            if ($path === '') {
+                continue;
+            }
+
+            return $this->normalizeManagerWebPath($path);
+        }
+
+        return null;
+    }
+
+    protected function normalizeManagerFilesystemPath(string $path): string
+    {
+        $path = rtrim($path, "/\\");
+        if ($this->isAbsolutePath($path)) {
+            return $path;
+        }
+
+        $path = trim($path, "/\\");
+        if ($path === '') {
+            $path = 'manager';
+        }
+
+        return public_path($path);
+    }
+
+    protected function normalizeManagerWebPath(string $path): string
+    {
+        $path = trim($path, "/\\");
+        if ($path === '') {
+            $path = 'manager';
+        }
+
+        return public_path($path);
+    }
+
+    protected function isAbsolutePath(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+
+        if ($path[0] === '/' || $path[0] === '\\') {
+            return true;
+        }
+
+        return (bool)preg_match('/^[A-Za-z]:\\\\/', $path);
+    }
+
+    protected function looksLikeUrl(string $value): bool
+    {
+        return str_contains($value, '://') || str_starts_with($value, '//');
+    }
+
+    protected function extractPathFromUrl(string $value): string
+    {
+        if ($this->looksLikeUrl($value)) {
+            return (string)parse_url($value, PHP_URL_PATH);
+        }
+
+        return $value;
+    }
+
+    protected function resolveLangVendorPath(string $namespace): string
+    {
+        if (function_exists('lang_path')) {
+            return lang_path('vendor/' . $namespace);
+        }
+
+        return base_path('lang/vendor/' . $namespace);
+    }
+
+    protected function resolveEvo()
+    {
+        if (function_exists('evo')) {
+            return evo();
+        }
+
+        if (function_exists('EvolutionCMS')) {
+            return EvolutionCMS();
+        }
+
+        return null;
     }
 }
